@@ -71,9 +71,11 @@ def get_creds():
     return service_account.Credentials.from_service_account_info(
         json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"]), scopes=SCOPES)
 
-@st.cache_resource
 def get_drive_service():
-    return build('drive', 'v3', credentials=get_creds())
+    # One Drive client per session (stored in st.session_state by the app).
+    # googleapiclient/httplib2 is not thread-safe; a single cached client shared
+    # across sessions causes intermittent '[SSL] record layer failure' errors.
+    return build('drive', 'v3', credentials=get_creds(), cache_discovery=False)
 
 def find_file(svc, name, fid):
     r = svc.files().list(
